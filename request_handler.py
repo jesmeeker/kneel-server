@@ -29,35 +29,68 @@ class HandleRequests(BaseHTTPRequestHandler):
         return (resource, id)  # This is a tuple
 
     def do_GET(self):
-        self._set_headers(200)
         response = {}  # Default response
 
         # Parse the URL and capture the tuple that is returned
         (resource, id) = self.parse_url(self.path)
         """Handles GET requests to the server """
+
         if resource == "metals":
             if id is not None:
                 response = get_single_metal(id)
 
+                if response is not None:
+                    self._set_headers(200)
+
+                else:
+                    self._set_headers(404)
+                    response = {"message": "That metal does not exist."}
+
             else:
+                self._set_headers(200)
                 response = get_all_metals()
 
         elif resource == "orders":
             if id is not None:
                 response = get_single_order(id)
+
+                if response is not None:
+                    self._set_headers(200)
+
+                else:
+                    self._set_headers(404)
+                    response = {"message": "That order was never placed, or was cancelled."}
             else:
+                self._set_headers(200)
                 response = get_all_orders()
 
         elif resource == "styles":
             if id is not None:
                 response = get_single_style(id)
+
+                if response is not None:
+                    self._set_headers(200)
+
+                else:
+                    self._set_headers(404)
+                    response = {"message": "That style does not exist."}
+            
             else:
+                self._set_headers(200)
                 response = get_all_styles()
 
         elif resource == "sizes":
             if id is not None:
                 response = get_single_size(id)
+
+                if response is not None:
+                    self._set_headers(200)
+
+                else:
+                    self._set_headers(404)
+                    response = {"message": "That size does not exist."}
             else:
+                self._set_headers(200)
                 response = get_all_sizes()
 
         else:
@@ -66,7 +99,7 @@ class HandleRequests(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(response).encode())
 
     def do_POST(self):
-        self._set_headers(201)
+        
         content_len = int(self.headers.get('content-length', 0))
         post_body = self.rfile.read(content_len)
 
@@ -83,16 +116,44 @@ class HandleRequests(BaseHTTPRequestHandler):
         # the orange squiggle, you'll define the create_animal
         # function next.
         if resource == "orders":
-            new_data = create_order(post_body)
+            if "metalId" in post_body and "sizeId" in post_body and "styleId" in post_body:
+                self._set_headers(201)
+                new_data = create_order(post_body)
+            else:
+                self._set_headers(400)
+                new_data = {
+                    "message": f'{"metalId is required" if "metalId" not in post_body else ""} {"sizeId is required" if "sizeId" not in post_body else ""} {"styleId is required" if "styleId" not in post_body else ""}'
+                        }
 
-        # if resource == "customers":
-        #     new_data = create_customer(post_body)
+        if resource == "metals":
+            if "metal" in post_body and "price" in post_body:
+                self._set_headers(201)
+                new_data = create_metal(post_body)
+            else:
+                self._set_headers(400)
+                new_data = {
+                    "message": f'{"metal is required" if "metal" not in post_body else ""} {"price is required" if "price" not in post_body else ""}'
+                        }
 
-        # if resource == "employees":
-        #     new_data = create_employee(post_body)
+        if resource == "sizes":
+            if "carets" in post_body and "price" in post_body:
+                self._set_headers(201)
+                new_data = create_size(post_body)
+            else:
+                self._set_headers(400)
+                new_data = {
+                    "message": f'{"carets is required" if "carets" not in post_body else ""} {"price is required" if "price" not in post_body else ""}'
+                        }
 
-        # if resource == "locations":
-        #     new_data = create_location(post_body)
+        if resource == "styles":
+            if "style" in post_body and "price" in post_body:
+                self._set_headers(201)
+                new_data = create_style(post_body)
+            else:
+                self._set_headers(400)
+                new_data = {
+                    "message": f'{"style is required" if "style" not in post_body else ""} {"price is required" if "price" not in post_body else ""}'
+                        }
 
         # Encode the new animal and send in response
         self.wfile.write(json.dumps(new_data).encode())

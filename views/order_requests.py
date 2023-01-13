@@ -1,16 +1,19 @@
+from .style_requests import get_single_style
+from .size_requests import get_single_size
+from .metal_requests import get_single_metal
+
 ORDERS = [
     {
         "id": 1,
         "metalId": 1,
         "sizeId": 1,
         "styleId": 1,
-        "timestamp": 1614659931693
     }
 ]
 
-
 def get_all_orders():
     return ORDERS
+
 
 def get_single_order(id):
     # Variable to hold the found animal, if it exists
@@ -24,7 +27,24 @@ def get_single_order(id):
         if order["id"] == id:
             requested_order = order
 
+            matching_style = get_single_style(
+                requested_order["styleId"])
+            requested_order["style"] = matching_style
+
+            matching_size = get_single_size(
+                requested_order["sizeId"])
+            requested_order["size"] = matching_size
+
+            matching_metal = get_single_metal(
+                requested_order["metalId"])
+            requested_order["metal"] = matching_metal
+
+            del order["styleId"]
+            del order["sizeId"]
+            del order["metalId"]
+
     return requested_order
+
 
 def create_order(order):
     # Get the id value of the last order in the list
@@ -42,6 +62,7 @@ def create_order(order):
     # Return the dictionary with `id` property added
     return order
 
+
 def delete_order(id):
     # Initial -1 value for order index, in case one isn't found
     order_index = -1
@@ -56,6 +77,7 @@ def delete_order(id):
     # If the order was found, use pop(int) to remove it from list
     if order_index >= 0:
         ORDERS.pop(order_index)
+
 
 def update_order(id, new_order):
     # Iterate the orderS list, but use enumerate() so that
