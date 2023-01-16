@@ -29,11 +29,11 @@ class HandleRequests(BaseHTTPRequestHandler):
         return (resource, id)  # This is a tuple
 
     def do_GET(self):
+        """Handles GET requests to the server """
         response = {}  # Default response
 
         # Parse the URL and capture the tuple that is returned
         (resource, id) = self.parse_url(self.path)
-        """Handles GET requests to the server """
 
         if resource == "metals":
             if id is not None:
@@ -94,7 +94,8 @@ class HandleRequests(BaseHTTPRequestHandler):
                 response = get_all_sizes()
 
         else:
-            response = []
+            self._set_headers(404)
+            response = ""
 
         self.wfile.write(json.dumps(response).encode())
 
