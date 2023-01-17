@@ -1,6 +1,8 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from views import all, retrieve, update, create, delete, get_all_metals, get_single_metal, create_metal, delete_metal, update_metal, get_all_orders, get_single_order, create_order, delete_order, update_order, get_all_sizes, get_single_size, create_size, delete_size, update_size, get_all_styles, get_single_style, create_style, delete_style, update_style
+from views import all, retrieve, update, create
+from urllib.parse import urlparse
+
 
 method_mapper = {
     'single': retrieve, 'all': all
@@ -11,11 +13,11 @@ class HandleRequests(BaseHTTPRequestHandler):
     """Controls the functionality of any GET, PUT, POST, DELETE requests to the server
     """
 
-    def get_all_or_single(self, resource, id):
+    def get_all_or_single(self, resource, id, query_params):
         """Determines whether the client is needing all items or a single item and then calls the correct function.
         """
         if id is not None:
-            response = method_mapper["single"](resource, id)
+            response = method_mapper["single"](resource, id, query_params)
 
             if response is not None:
                 self._set_headers(200)
@@ -28,33 +30,29 @@ class HandleRequests(BaseHTTPRequestHandler):
 
         return response
 
+    # Replace existing function with this
     def parse_url(self, path):
-        # Just like splitting a string in JavaScript. If the
-        # path is "/animals/1", the resulting list will
-        # have "" at index 0, "animals" at index 1, and "1"
-        # at index 2.
-        path_params = path.split("/")
-        resource = path_params[1]
+        url_components = urlparse(path)
+        path_params = url_components.path.strip("/").split("/")
+        query_params = url_components.query.split("&")
+        resource = path_params[0]
         id = None
 
-        # Try to get the item at index 2
         try:
-            # Convert the string "1" to the integer 1
-            # This is the new parseInt()
-            id = int(path_params[2])
+            id = int(path_params[1])
         except IndexError:
-            pass  # No route parameter exists: /animals
+            pass
         except ValueError:
-            pass  # Request had trailing slash: /animals/
+            pass
 
-        return (resource, id)  # This is a tuple
+        return (resource, id, query_params)
 
     def do_GET(self):
         """Handles GET requests to the server """
 
         response = None
-        (resource, id) = self.parse_url(self.path)
-        response = self.get_all_or_single(resource, id)
+        (resource, id, query_params) = self.parse_url(self.path)
+        response = self.get_all_or_single(resource, id, query_params)
         self.wfile.write(json.dumps(response).encode())
 
     def do_POST(self):

@@ -1,6 +1,5 @@
 DATABASE = {
-    'orders':
-    [
+    'orders': [
         {
             "id": 1,
             "metalId": 1,
@@ -87,9 +86,10 @@ def all(resource):
     return DATABASE[resource]
 
 
-def retrieve(resource, id):
+def retrieve(resource, id, query_params):
     """For GET requests to a single resource"""
     requested_resource = None
+    price = 0
 
     # Iterate the ANIMALS list above. Very similar to the
     # for..of loops you used in JavaScript.
@@ -99,28 +99,60 @@ def retrieve(resource, id):
         if e["id"] == id:
             requested_resource = e
 
-            if resource == 'orders':
+        if resource == 'orders':
+            if query_params == ['']:
                 for i in DATABASE['metals']:
                     matching_metal = None
                     if i["id"] == requested_resource["metalId"]:
                         matching_metal = i
-                        requested_resource["metal"] = matching_metal
+                        # requested_resource["metal"] = matching_metal
+                        price += matching_metal["price"]
 
                 for j in DATABASE['sizes']:
                     matching_size = None
                     if j["id"] == requested_resource["sizeId"]:
                         matching_size = j
-                        requested_resource["size"] = matching_size
+                        # requested_resource["size"] = matching_size
+                        price += matching_size["price"]
+            
+                for k in DATABASE['styles']:
+                    matching_style = None
+                    if k["id"] == requested_resource["styleId"]:
+                        matching_style = k
+                        # requested_resource["style"] = matching_style
+                        price += matching_style["price"]
 
+            elif query_params == ['_expand=metal']:
+                for i in DATABASE['metals']:
+                    matching_metal = None
+                    if i["id"] == requested_resource["metalId"]:
+                        matching_metal = i
+                        requested_resource["metal"] = matching_metal
+                        price += matching_metal["price"]
+
+            elif query_params == ['_expand=size']:
+                for j in DATABASE['sizes']:
+                    matching_size = None
+                    if j["id"] == requested_resource["sizeId"]:
+                        matching_size = j
+                        requested_resource["size"] = matching_size
+                        price += matching_size["price"]
+
+            elif query_params == ['_expand=style']:
                 for k in DATABASE['styles']:
                     matching_style = None
                     if k["id"] == requested_resource["styleId"]:
                         matching_style = k
                         requested_resource["style"] = matching_style
-
-                del requested_resource["metalId"]
-                del requested_resource["sizeId"]
-                del requested_resource["styleId"]
+                        price += matching_style["price"]
+            
+            else:
+                ""
+                
+        requested_resource["price"] = price
+            # del requested_resource["metalId"]
+            # del requested_resource["sizeId"]
+            # del requested_resource["styleId"]
 
     return requested_resource
 
