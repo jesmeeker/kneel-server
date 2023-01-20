@@ -1,6 +1,6 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from views import all, retrieve, update, create
+from views import all, retrieve, update, create, delete
 from urllib.parse import urlparse
 
 
@@ -64,7 +64,7 @@ class HandleRequests(BaseHTTPRequestHandler):
         post_body = json.loads(post_body)
 
         # Parse the URL
-        (resource, id) = self.parse_url(self.path)
+        (resource, id, query_params) = self.parse_url(self.path)
 
         # Initialize new animal
         new_data = None
@@ -77,13 +77,13 @@ class HandleRequests(BaseHTTPRequestHandler):
             self._set_headers(405)
 
         elif resource == "orders":
-            if "metalId" in post_body and "sizeId" in post_body and "styleId" in post_body:
+            if "metal_id" in post_body and "size_id" in post_body and "style_id" in post_body:
                 self._set_headers(201)
                 new_data = create(resource, post_body)
             else:
                 self._set_headers(400)
                 new_data = {
-                    "message": f'{"metalId is required" if "metalId" not in post_body else ""} {"sizeId is required" if "sizeId" not in post_body else ""} {"styleId is required" if "styleId" not in post_body else ""}'
+                    "message": f'{"metal_id is required" if "metal_id" not in post_body else ""} {"size_id is required" if "size_id" not in post_body else ""} {"style_id is required" if "style_id" not in post_body else ""}'
                 }
 
         self.wfile.write(json.dumps(new_data).encode())
@@ -126,21 +126,32 @@ class HandleRequests(BaseHTTPRequestHandler):
         post_body = json.loads(post_body)
 
         # Parse the URL
-        (resource, id) = self.parse_url(self.path)
+        (resource, id, query_params) = self.parse_url(self.path)
 
-        # Delete a single animal from the list
-        if resource in ('orders', 'sizes', 'styles'):
-            self._set_headers(405)
-
-        if resource == "metals":
-            self._set_headers(204)
-            update(resource, id, post_body)
+        success = False
         
-        # Encode the new animal and send in response
+        if resource == "orders":
+            success = update(resource, id, post_body)
+        # rest of the elif's
+
+        if success:
+            self._set_headers(204)
+        else:
+            self._set_headers(404)
+
         self.wfile.write("".encode())
 
     def do_DELETE(self):
-        self._set_headers(405)
+        # Parse the URL
+        (resource, id, query_params) = self.parse_url(self.path)
+
+        # Set a 204 response code
+        self._set_headers(204)
+        # Delete a single item from the list
+        delete(resource, id)
+
+        # Encode the new animal and send in response
+        self.wfile.write("".encode())
         
 
     def _set_headers(self, status):

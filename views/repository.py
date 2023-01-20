@@ -181,7 +181,7 @@ def retrieve(resource, id, query_params):
 
             # Create an animal instance from the current row
             order = Order(data['id'], data['metal_id'], data['size_id'],
-                            data['style_id'])
+                          data['style_id'])
 
             return order.__dict__
     # """For GET requests to a single resource"""
@@ -255,22 +255,28 @@ def retrieve(resource, id, query_params):
 
 
 def create(resource, post_body):
-    """For POST requests to a collection"""
+    with sqlite3.connect("./kneeldiamonds.sqlite3") as conn:
+        db_cursor = conn.cursor()
+        if resource == 'orders':
+            db_cursor.execute("""
+            INSERT INTO Orders
+                ( metal_id, size_id, style_id )
+            VALUES
+                ( ?, ?, ? );
+            """, (post_body['metal_id'],
+                  post_body['size_id'], post_body['style_id']))
 
-    # Get the id value of the last animal in the list
-    max_id = DATABASE[resource][-1]["id"]
+            # The `lastrowid` property on the cursor will return
+            # the primary key of the last thing that got added to
+            # the database.
+            id = db_cursor.lastrowid
 
-    # Add 1 to whatever that number is
-    new_id = max_id + 1
+            # Add the `id` property to the animal dictionary that
+            # was sent by the client so that the client sees the
+            # primary key in the response.
+            post_body['id'] = id
 
-    # Add an `id` property to the animal dictionary
-    post_body["id"] = new_id
-
-    # Add the animal dictionary to the list
-    DATABASE[resource].append(post_body)
-
-    # Return the dictionary with `id` property added
-    return post_body
+            return post_body
 
 
 def update(resource, id, post_body):
@@ -278,24 +284,37 @@ def update(resource, id, post_body):
 
     # Iterate the ANIMALS list, but use enumerate() so that
     # you can access the index value of each item.
-    for index, item in enumerate(DATABASE[resource]):
-        if item["id"] == id:
-            # Found the animal. Update the value.
-            DATABASE[resource][index] = post_body
-            break
+    with sqlite3.connect("./kneeldiamonds.sqlite3") as conn:
+        db_cursor = conn.cursor()
+
+        if resource == 'orders':
+            db_cursor.execute("""
+            UPDATE Orders
+                SET
+                    metal_id = ?,
+                    size_id = ?,
+                    style_id = ?
+            WHERE id = ?
+            """, (post_body['metal_id'], post_body['size_id'], post_body['style_id'], id, ))
+
+            # Were any rows affected?
+            # Did the client send an `id` that exists?
+            rows_affected = db_cursor.rowcount
+
+        if rows_affected == 0:
+            # Forces 404 response by main module
+            return False
+        else:
+            # Forces 204 response by main module
+            return True
 
 
 def delete(resource, id):
-    """For DELETE requests to a single resource"""
-    resource_index = -1
+    with sqlite3.connect("./kneeldiamonds.sqlite3") as conn:
+        db_cursor = conn.cursor()
 
-    # Iterate the ANIMALS list, but use enumerate() so that you
-    # can access the index value of each item
-    for index, item in enumerate(DATABASE[resource]):
-        if item["id"] == id:
-            # Found the animal. Store the current index.
-            resource_index = index
-
-    # If the animal was found, use pop(int) to remove it from list
-    if resource_index >= 0:
-        DATABASE[resource].pop(resource_index)
+        if resource == 'orders':
+            db_cursor.execute("""
+            DELETE FROM Orders
+            WHERE id = ?
+            """, (id, ))
